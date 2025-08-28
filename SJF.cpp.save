@@ -45,7 +45,7 @@ void proc(unordered_map<int, int>& processes){
 
     int burstTime;
     int time = 1;
-    
+ 
     cout << "Enter burstTime (enter 0 to stop):" << endl;
     while (cin >> burstTime && burstTime != 0) {
     processes[time] = burstTime;
@@ -54,12 +54,6 @@ void proc(unordered_map<int, int>& processes){
     }
 
     int sum = 0;
-    // add test data
-    //processes["p0"] = 0;
-    //processes["Process 1"] = 5;
-    //processes["Process 2"] = 3;
-    //processes["Process 3"] = 8;
-    //processes["Process 4"] = 9;
 
     cout << "\nAll processes stored in hash table:\n";
     for (const auto& pair : processes) {
@@ -70,9 +64,7 @@ void proc(unordered_map<int, int>& processes){
     auto vec = getSorted(processes);
     
     // Print sorted
-    for (auto& p : vec) {
-        cout << p.first << " -> " << p.second << endl;
-    }
+    f
     
     // Step by step accumulation (completion times)
     cout << "\nCompletion times: ";
