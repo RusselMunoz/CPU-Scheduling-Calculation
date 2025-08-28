@@ -7,6 +7,7 @@ using namespace std;
 // Return a sorted vector of (processId, burstTime)
 vector<pair<int,int>> getSorted(const vector<int>& processes) {
     vector<pair<int,int>> vec;
+    
     for (int i = 0; i < processes.size(); i++) {
         vec.push_back({i+1, processes[i]}); // process IDs start from 1
     }
@@ -55,12 +56,12 @@ void proc(vector<int>& processes) {
     auto tat = getTurnaroundTimes(vec);
 
     // Print sorted processes
-    cout << "\nProcesses sorted by burst time:\n";
-    for (int i = 0; i < vec.size(); i++) {
-        cout << "Process " << vec[i].first 
-             << " -> Burst: " << vec[i].second
-             << " | Waiting: " << waiting[i]
-             << " | Turnaround: " << tat[i] << endl;
+    cout << "\nProcesses in original input order:\n";
+    for (int i = 0; i < processes.size(); i++) {
+        cout << "Process " << i+1
+        << " -> Burst: " << processes[i] 
+        << " | Waiting: " << waiting[i]
+        << " | Turnaround: " << tat[i] << endl;
     }
 
     // Print Gantt chart
@@ -69,7 +70,7 @@ void proc(vector<int>& processes) {
     int cumulative = 0;
     for (int i = 0; i < vec.size(); i++) {
         cumulative += vec[i].second;
-        cout << " " << cumulative << " ";
+        cout << " " << cumulative;
     }
     cout << endl;
 
