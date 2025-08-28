@@ -1,105 +1,96 @@
 #include <iostream>
-#include <unordered_map>
 #include <vector>
 #include <algorithm>
 #include <chrono>
 using namespace std;
 
-// Helper function: return a sorted vector by value
-vector<pair<int, int>> getSorted(const unordered_map<int,int>& processes) {
-    vector<pair<int, int>> vec(processes.begin(), processes.end());
+// Return a sorted vector of (processId, burstTime)
+vector<pair<int,int>> getSorted(const vector<int>& processes) {
+    vector<pair<int,int>> vec;
+    for (int i = 0; i < processes.size(); i++) {
+        vec.push_back({i+1, processes[i]}); // process IDs start from 1
+    }
     sort(vec.begin(), vec.end(), [](auto &a, auto &b) {
         return a.second < b.second;
     });
     return vec;
 }
 
-// Calculate waiting time from sorted vector
-double waitingTime(const vector<pair<int, int>>& vec){
-    double totalWait = 0.0;
-    double cumulative = 0.0;
-    // waiting time for each process (except the first)
+// Calculate waiting times for each process
+vector<int> getWaitingTimes(const vector<pair<int,int>>& vec) {
+    vector<int> waiting(vec.size(), 0);
+    int cumulative = 0;
     for (int i = 0; i < vec.size(); i++) {
-        totalWait += cumulative;   // add the time this process had to wait
-        cumulative += vec[i].second; // update cumulative burst time
+        waiting[i] = cumulative;
+        cumulative += vec[i].second;
     }
-    // exclude the dummy "p0" if you don't want it in avg
-    return totalWait / (vec.size() - 1);
+    return waiting;
 }
 
-// Calculate turn around time from sorted vector
-double turnaround(const vector<pair<int, int>>& vec) {
-    double totalTAT = 0.0;
-    double cumulative = 0.0;
-    
-    for (int i = 0; i < vec.size(); i++) {
-        cumulative += vec[i].second; // completion time
-        totalTAT += cumulative;      // turnaround time = completion time (assuming arrival time = 0)
-    }
-    // exclude the dummy "p1" in avg
-    return totalTAT / (vec.size() - 1);
-}
-
-// Prints processes and accumulates step by step
-void proc(unordered_map<int, int>& processes){
-
-    int burstTime;
-    int time = 1;
-    
-    cout << "Enter burstTime (enter 0 to stop):" << endl;
-    while (cin >> burstTime && burstTime != 0) {
-    processes[time] = burstTime;
-        cout << "Process " << time << ": " << burstTime << endl;
-         ++time;
-    }
-
-    int sum = 0;
-    // add test data
-    //processes["p0"] = 0;
-    //processes["Process 1"] = 5;
-    //processes["Process 2"] = 3;
-    //processes["Process 3"] = 8;
-    //processes["Process 4"] = 9;
-
-    cout << "\nAll processes stored in hash table:\n";
-    for (const auto& pair : processes) {
-        cout << "Process " << pair.first << ": " << pair.second << endl;
-    }
-    
-    // get sorted processes
-    auto vec = getSorted(processes);
-    
-    // Print sorted
-    for (auto& p : vec) {
-        cout << p.first << " -> " << p.second << endl;
-    }
-    
-    // Step by step accumulation (completion times)
-    cout << "\nCompletion times: ";
+// Calculate turnaround times for each process
+vector<int> getTurnaroundTimes(const vector<pair<int,int>>& vec) {
+    vector<int> tat(vec.size(), 0);
     int cumulative = 0;
     for (int i = 0; i < vec.size(); i++) {
         cumulative += vec[i].second;
-        cout << cumulative << " ";
+        tat[i] = cumulative;
+    }
+    return tat;
+}
+
+// Input processes and print scheduling results
+void proc(vector<int>& processes) {
+    int burstTime;
+    cout << "Enter burst times (0 to stop):" << endl;
+    while (cin >> burstTime && burstTime != 0) {
+        processes.push_back(burstTime);
+        cout << "Process " << processes.size() << ": " << burstTime << endl;
+    }
+
+    // Sort by burst time
+    auto vec = getSorted(processes);
+
+    // Compute waiting times and turnaround times
+    auto waiting = getWaitingTimes(vec);
+    auto tat = getTurnaroundTimes(vec);
+
+    // Print sorted processes
+    cout << "\nProcesses sorted by burst time:\n";
+    for (int i = 0; i < vec.size(); i++) {
+        cout << "Process " << vec[i].first 
+             << " -> Burst: " << vec[i].second
+             << " | Waiting: " << waiting[i]
+             << " | Turnaround: " << tat[i] << endl;
+    }
+
+    // Print Gantt chart
+    cout << "\nGantt Chart:\n";
+    cout << "0";  // always start at 0
+    int cumulative = 0;
+    for (int i = 0; i < vec.size(); i++) {
+        cumulative += vec[i].second;
+        cout << " " << cumulative << " ";
     }
     cout << endl;
-    
-    // Print waiting time & turnaround
-    cout << "Average waiting time: " << waitingTime(vec) << "m/s" << endl;
-    cout << "Average turnaround time: " << turnaround(vec) << "m/s" << endl;
+
+    // Averages
+    double avgWait = 0, avgTAT = 0;
+    for (int i = 0; i < vec.size(); i++) {
+        avgWait += waiting[i];
+        avgTAT += tat[i];
+    }
+    cout << "\nAverage waiting time: " << avgWait / vec.size() << endl;
+    cout << "Average turnaround time: " << avgTAT / vec.size() << endl;
 }
 
 int main() {
-    unordered_map<int, int> processes;
+    vector<int> processes;
     auto start = chrono::high_resolution_clock::now();
-	
-    proc(processes);  // this will also print waiting time
+
+    proc(processes);
+
     auto end = chrono::high_resolution_clock::now();
-	// Calculate duration in microseconds
     auto duration = chrono::duration_cast<chrono::microseconds>(end - start);
-
-    // Print the execution time
-    std::cout << "Execution time: " << duration.count() << " microseconds" << std::endl;
-
+    cout << "Execution time: " << duration.count() << " microseconds" << endl;
     return 0;
 }
-
