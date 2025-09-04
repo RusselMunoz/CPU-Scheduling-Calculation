@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <tuple>
-#include <algorithm>
 #include <chrono>
 #include <unordered_set>
 #include <climits>
@@ -10,19 +9,17 @@ using namespace std;
 // ==============================
 // Function: scheduleSJF
 // Purpose: Run non-preemptive SJF with arrival times
-// Returns waiting times, turnaround times, and completion times
+// Returns waiting times, turnaround times, and Gantt chart order
 // ==============================
 void scheduleSJF(const vector<int>& burstTimes,
                  const vector<int>& arrivalTimes,
                  vector<int>& waiting,
                  vector<int>& turnaround,
-                 vector<int>& completion,
                  vector<int>& ganttOrder) 
 {
     int n = burstTimes.size();
     waiting.assign(n, 0);
     turnaround.assign(n, 0);
-    completion.assign(n, 0);
     vector<bool> done(n, false);
 
     int currentTime = 0, completed = 0;
@@ -35,8 +32,7 @@ void scheduleSJF(const vector<int>& burstTimes,
         for (int i = 0; i < n; i++) {
             if (!done[i] && arrivalTimes[i] <= currentTime) {
                 if (burstTimes[i] < shortest || 
-                    (burstTimes[i] == shortest && arrivalTimes[i] < arrivalTimes[idx]) || 
-                    (burstTimes[i] == shortest && arrivalTimes[i] == arrivalTimes[idx] && i < idx)) {
+                   (burstTimes[i] == shortest && i < idx)) {
                     shortest = burstTimes[i];
                     idx = i;
                 }
@@ -44,7 +40,7 @@ void scheduleSJF(const vector<int>& burstTimes,
         }
 
         if (idx == -1) {
-            // No process ready -> jump to next arrival
+            // Jump to next arrival if nothing ready
             int nextArrival = INT_MAX;
             for (int i = 0; i < n; i++) {
                 if (!done[i]) nextArrival = min(nextArrival, arrivalTimes[i]);
@@ -53,18 +49,16 @@ void scheduleSJF(const vector<int>& burstTimes,
             continue;
         }
 
-        // Start and complete selected process
-        int startTime = currentTime;
-        int finishTime = startTime + burstTimes[idx];
-        waiting[idx] = startTime - arrivalTimes[idx];
-        turnaround[idx] = waiting[idx] + burstTimes[idx];
-        completion[idx] = finishTime;
+        // Run process
+        currentTime += burstTimes[idx];
+        ganttOrder.push_back(idx + 1);
 
-        currentTime = finishTime;
+        // Compute WT and TAT directly from Gantt
+        turnaround[idx] = currentTime - arrivalTimes[idx];
+        waiting[idx] = turnaround[idx] - burstTimes[idx];
+
         done[idx] = true;
         completed++;
-
-        ganttOrder.push_back(idx + 1); // store process ID
     }
 }
 
@@ -87,8 +81,8 @@ void proc(vector<int>& burstTimes, vector<int>& arrivalTimes) {
         cout << "Process " << burstTimes.size() << ": Burst = " << burstTime << ", Arrival = " << arrivalTime << endl;
     }
 
-    vector<int> waiting, turnaround, completion, ganttOrder;
-    scheduleSJF(burstTimes, arrivalTimes, waiting, turnaround, completion, ganttOrder);
+    vector<int> waiting, turnaround, ganttOrder, completion;
+    scheduleSJF(burstTimes, arrivalTimes, waiting, turnaround, ganttOrder);
 
     // Print per-process results
     cout << "\nProcesses:\n";
@@ -97,15 +91,16 @@ void proc(vector<int>& burstTimes, vector<int>& arrivalTimes) {
              << " -> Burst: " << burstTimes[i]
              << " | Arrival: " << arrivalTimes[i]
              << " | Waiting: " << waiting[i]
-             << " | Turnaround: " << turnaround[i]
-             << " | Completion: " << completion[i] << endl;
+             << " | Turnaround: " << turnaround[i] << endl;
     }
 
     // Print Gantt chart
     cout << "\nGantt Chart:\n0";
+    int currentTime = 0;
     for (int pid : ganttOrder) {
         int idx = pid - 1;
-        cout << " " << completion[idx];
+        currentTime += burstTimes[idx];
+        cout << " " << currentTime;
     }
     cout << endl;
 
